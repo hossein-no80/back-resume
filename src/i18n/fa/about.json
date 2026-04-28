@@ -1,0 +1,7 @@
+{
+  "not_found": "رکورد About یافت نشد. ابتدا یک رکورد ایجاد کنید.",
+  "duplicate_email": "ایمیل تکراری است.",
+  "update_success": "About با موفقیت به‌روزرسانی شد.",
+  "create_success": "About با موفقیت ایجاد شد.",
+  "delete_success": "About با موفقیت حذف شد."
+}

@@ -12,7 +12,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.use(cookieParser()); // ✅ استفاده از cookie-parser
-  app.use(session({ secret: 'secret' }));
+  app.use(session({ secret: process.env.SESSION_SECRET || 'secret' }));
   app.use(passport.initialize());
   app.use(passport.session());
   dotenv.config();

@@ -1,0 +1,7 @@
+{
+  "not_found": "About record not found. Please create one first.",
+  "duplicate_email": "Email already exists.",
+  "update_success": "About updated successfully.",
+  "create_success": "About created successfully.",
+  "delete_success": "About deleted successfully."
+}

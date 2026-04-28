@@ -13,17 +13,22 @@ import {
   I18nModule,
   QueryResolver,
 } from 'nestjs-i18n';
-import { UsersModule } from './modules/users/users.module';
-import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/admin/users/users.module';
+import { AuthModule } from './modules/admin/auth/auth.module';
 import { PortfolioModule } from './modules/portfolio/portfolio.module';
-import { SkillModule } from './modules/skill/skill.module';
-import { AboutModule } from './modules/about/about.module';
-import { ExperienceModule } from './modules/experience/experience.module';
+import { SkillModule } from './modules/resume/skill/skill.module';
+import { AboutModule } from './modules/resume/about/about.module';
+import { ExperienceModule } from './modules/resume/experience/experience.module';
 import { BlogModule } from './modules/blog/blog.module';
+import { InterestModule } from './modules/resume/interest/interest.module';
+import { ContactModule } from './modules/contact/contact.module';
 import * as path from 'node:path';
+import UserEntity from './modules/admin/users/entities/user.entity';
+import { SeederService } from './database/seeder/seeder.service';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([UserEntity]),
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {
@@ -38,11 +43,11 @@ import * as path from 'node:path';
     }),
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: '127.0.0.1',
+      host: process.env.DB_HOST || '127.0.0.1',
       port: 3306,
-      username: 'root',
-      password: 'HosseiN545688@+',
-      database: 'back_resume',
+      username: process.env.DB_USERNAME || 'root',
+      password: process.env.DB_PASSWORD || 'HosseiN545688@+',
+      database: process.env.DB_DATABASE || 'back_resume',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
@@ -54,12 +59,10 @@ import * as path from 'node:path';
     AboutModule,
     ExperienceModule,
     BlogModule,
-    // TypeOrmModule.forFeature([UserEntity]),
-    // UsersModule,
-    // AuthModule,
-    // ProductsModule,
+    InterestModule,
+    ContactModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SeederService],
 })
 export class AppModule {}
