@@ -25,9 +25,30 @@ import { ContactModule } from './modules/contact/contact.module';
 import * as path from 'node:path';
 import UserEntity from './modules/admin/users/entities/user.entity';
 import { SeederService } from './database/seeder/seeder.service';
+import { MailerModule } from '@nestjs-modules/mailer';
+// import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 @Module({
   imports: [
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: false, // true for 465
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      },
+      defaults: {
+        from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+      },
+      template: {
+        dir: path.join(__dirname, 'templates'),
+        // adapter: new HandlebarsAdapter(),
+        options: { strict: true },
+      },
+    }),
     TypeOrmModule.forFeature([UserEntity]),
     I18nModule.forRoot({
       fallbackLanguage: 'en',
