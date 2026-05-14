@@ -14,6 +14,7 @@ import { UpdateAboutDto } from './dto/update-about.dto';
 import { Experience } from '../experience/entities/experience.entity';
 import { Interest } from '../interest/entities/interest.entity';
 import { Skill } from '../skill/entities/skill.entity';
+import { InterestTranslation } from '../interest/entities/interest-translation.entity';
 import { ExperienceService } from '../experience/experience.service';
 import { InterestService } from '../interest/interest.service';
 import { SkillService } from '../skill/skill.service';
@@ -216,7 +217,7 @@ export class AboutService {
         await queryRunner.manager.remove(about.skills);
       }
 
-      // ایجاد تجربیات جدید با استفاده از سرویس (که از همان queryRunner استفاده نمی‌کند، بنابراین باید مستقیماً از manager استفاده کنیم)
+      // ایجاد تجربیات جدید (مستقیم با manager)
       if (createAboutDto.experiences?.length) {
         const newExperiences = createAboutDto.experiences.map((exp) => {
           const e = queryRunner.manager.create(Experience, exp);
@@ -227,16 +228,31 @@ export class AboutService {
         await queryRunner.manager.save(newExperiences);
       }
 
-      // ایجاد علایق جدید با استفاده از سرویس (برای سادگی با Promise.all)
+      // ایجاد علایق جدید (مستقیم با manager – رفع مشکل deadlock)
       if (createAboutDto.interests?.length) {
-        await Promise.all(
-          createAboutDto.interests.map((intDto) =>
-            this.interestService.create(about, intDto),
-          ),
-        );
+        for (const intDto of createAboutDto.interests) {
+          const interest = queryRunner.manager.create(Interest, {
+            about,
+            aboutId: about.id,
+          });
+          await queryRunner.manager.save(interest);
+
+          if (intDto.translations?.length) {
+            const translations = intDto.translations.map((transDto) =>
+              queryRunner.manager.create(InterestTranslation, {
+                ...transDto,
+                interest,
+                interestId: interest.id,
+              }),
+            );
+            await queryRunner.manager.save(translations);
+            interest.translations = translations;
+            await queryRunner.manager.save(interest);
+          }
+        }
       }
 
-      // ایجاد مهارت‌های جدید
+      // ایجاد مهارت‌های جدید (مستقیم با manager)
       if (createAboutDto.skills?.length) {
         const newSkills = createAboutDto.skills.map((skill) => {
           const s = queryRunner.manager.create(Skill, skill);
@@ -266,7 +282,7 @@ export class AboutService {
   async update(updateAboutDto: UpdateAboutDto) {
     const existing = await this.getAboutEntity();
 
-    // تبدیل به DTO برای ادغام (همان منطق قبلی ولی با سرویس‌های مجزا می‌توان بهینه کرد)
+    // تبدیل به DTO برای ادغام
     const existingExperiencesDto = existing.experiences.map((exp) => ({
       company: exp.company,
       location: exp.location,

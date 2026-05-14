@@ -1,4 +1,5 @@
-// src/modules/about/entities/about-translation.entity.ts
+// src/modules/resume/interest/entities/interest-translation.entity.ts
+import { ApiProperty } from '@nestjs/swagger';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -10,26 +11,30 @@ import { Interest } from './interest.entity';
 
 @Entity('interest_translations')
 export class InterestTranslation {
+  @ApiProperty({ example: 1 })
   @PrimaryGeneratedColumn()
   id: number;
 
+  @ApiProperty({ example: 'fa' })
   @Column({ length: 10 })
-  language: string; // 'fa', 'en', ...
+  language: string;
 
+  @ApiProperty({ example: 'برنامه‌نویسی' })
   @Column({ length: 200 })
   name: string;
 
+  @ApiProperty({ example: 'تکنولوژی' })
   @Column({ length: 200 })
   category: string;
 
-  // در آینده اگر فیلدهای متنی دیگری نیاز به ترجمه داشت (مثلاً subtitle) به اینجا اضافه کن
-
+  @ApiProperty({ type: () => Interest, readOnly: true })
   @ManyToOne(() => Interest, (interest) => interest.translations, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'interest_id' })
   interest: Interest;
 
+  @ApiProperty({ example: 1, readOnly: true })
   @Column({ name: 'interest_id' })
   interestId: number;
 }

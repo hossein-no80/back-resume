@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { Portfolio } from './entities/portfolio.entity';
@@ -25,11 +30,28 @@ export class PortfolioService {
     private skillRepo: Repository<Skill>,
     private dataSource: DataSource,
   ) {}
-
+  private getTranslatedSkill(skill: Skill, language: string) {
+    const translation = skill.translations?.find((t) => t.language === language);
+    if (!translation) {
+      const fallback = skill.translations?.[0];
+      return {
+        id: skill.id,
+        name: fallback?.name || '',
+        level: fallback?.level || '',
+        icon: fallback?.icon || '',
+      };
+    }
+    return {
+      id: skill.id,
+      name: translation.name,
+      level: translation.level,
+      icon: translation.icon,
+    };
+  }
   private async getPortfolioEntity(id: string): Promise<Portfolio> {
     const portfolio = await this.portfolioRepo.findOne({
       where: { id },
-      relations: ['translations', 'images', 'skillsUsed'],
+      relations: ['translations', 'images', 'skillsUsed', 'skillsUsed.translations'], // ✅ اضافه شد
     });
     if (!portfolio) throw new NotFoundException('Portfolio not found');
     return portfolio;
@@ -44,13 +66,16 @@ export class PortfolioService {
       }
       return {
         id: portfolio.id,
+        status: portfolio.status,
         title: fallback.title,
         subtitle: fallback.subtitle,
         description: fallback.description,
         githubUrl: portfolio.githubUrl,
         demoUrl: portfolio.demoUrl,
         projectDate: portfolio.projectDate,
-        skillsUsed: portfolio.skillsUsed,
+        skillsUsed: (portfolio.skillsUsed || []).map((skill) =>
+          this.getTranslatedSkill(skill, language),
+        ),
         images: portfolio.images,
         createdAt: portfolio.createdAt,
         updatedAt: portfolio.updatedAt,
@@ -58,6 +83,7 @@ export class PortfolioService {
     }
     return {
       id: portfolio.id,
+      status: portfolio.status,
       title: translation.title,
       subtitle: translation.subtitle,
       description: translation.description,
@@ -132,13 +158,19 @@ export class PortfolioService {
 
   async findAll(
     language: string = DEFAULT_LANGUAGE,
-    includeAll: boolean = false) {
+    includeAll: boolean = false,
+  ) {
     const whereCondition = includeAll
       ? {}
       : { status: PortfolioStatus.PUBLISHED };
     const portfolios = await this.portfolioRepo.find({
       where: whereCondition,
-      relations: ['translations', 'images', 'skillsUsed'],
+      relations: [
+        'translations',
+        'images',
+        'skillsUsed',
+        'skillsUsed.translations',
+      ], // ✅ اضافه شد
       order: { createdAt: 'DESC' },
     });
     return portfolios.map((p) => this.getTranslatedPortfolio(p, language));
