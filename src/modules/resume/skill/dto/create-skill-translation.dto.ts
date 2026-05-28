@@ -13,7 +13,7 @@ export class CreateSkillTranslationDto {
   name: string;
 
   @ApiProperty({ example: 'Intermediate', maxLength: 20 })
-  @IsIn(['advanced', 'Beginner', 'Intermediate'])
+  @IsIn(['Advanced', 'Beginner', 'Intermediate'])
   level: string;
 
   @ApiPropertyOptional({ example: 'asdfj;alskfjasdl;fj' })
