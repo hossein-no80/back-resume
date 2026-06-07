@@ -22,6 +22,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.use(cookieParser()); // ✅ استفاده از cookie-parser
+  app.setGlobalPrefix('be');
   app.use(session({ secret: process.env.SESSION_SECRET || 'secret' }));
   app.use(passport.initialize());
   app.use(passport.session());
