@@ -15,7 +15,7 @@ import { ApiProperty } from '@nestjs/swagger';
 @Entity('about')
 export class About {
   @ApiProperty({ example: 1 })
-  @PrimaryColumn({ type: 'int', default: 1 })
+  @PrimaryColumn({ type: 'int', default: () => 1 })
   id: number;
 
   @ApiProperty({ example: 'admin@example.com' })

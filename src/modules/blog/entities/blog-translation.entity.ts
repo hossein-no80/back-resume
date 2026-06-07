@@ -18,7 +18,7 @@ export class BlogTranslation {
   @Column({ type: 'text', nullable: true })
   excerpt: string;
 
-  @Column({ type: 'longtext' })
+  @Column({ type: 'text' })
   content: string;
 
   @ManyToOne(() => Blog, (blog) => blog.translations, { onDelete: 'CASCADE' })

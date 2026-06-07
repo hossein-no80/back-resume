@@ -28,9 +28,9 @@ import UserEntity from './modules/admin/users/entities/user.entity';
   imports: [
     // 1. تنظیمات ماژول محیطی (بارگذاری فایل .env)
     ConfigModule.forRoot({
-      envFilePath: '.env',      // مسیر فایل محیطی (پیش‌فرض)
-      isGlobal: true,           // در دسترس بودن در کل برنامه
-      cache: true,              // کش کردن برای بهبود عملکرد
+      envFilePath: '.env',
+      isGlobal: true,
+      cache: true,
     }),
 
     // 2. تنظیمات ایمیل (Mailer) - به صورت غیرهمزمان با ConfigService
@@ -61,15 +61,15 @@ import UserEntity from './modules/admin/users/entities/user.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
-        host: configService.get<string>('DB_HOST', '127.0.0.1'),
-        port: configService.get<number>('DB_PORT', 3306),
-        username: configService.get<string>('DB_USERNAME'),   // الزامی: بدون مقدار پیش‌فرض
-        password: configService.get<string>('DB_PASSWORD'),   // الزامی: بدون مقدار پیش‌فرض
-        database: configService.get<string>('DB_DATABASE'),   // الزامی: بدون مقدار پیش‌فرض
+        type: 'postgres',
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: configService.get<number>('DB_PORT', 5432),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,   // در محیط تولید همیشه false باشد
-        logging: false,       // برای دیباگ می‌توانید true کنید
+        synchronize: true,
+        logging: false,
       }),
       inject: [ConfigService],
     }),
