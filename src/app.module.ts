@@ -1,18 +1,17 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-// import { UsersModule } from './users/users.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-// import { AuthModule } from './auth/auth.module';
-// import { ProductsModule } from './products/products.module';
-// import UserEntity from './users/entities/user.entity';
-
+import { MailerModule } from '@nestjs-modules/mailer';
 import {
   AcceptLanguageResolver,
   HeaderResolver,
   I18nModule,
   QueryResolver,
 } from 'nestjs-i18n';
+import * as path from 'node:path';
+
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { UsersModule } from './modules/admin/users/users.module';
 import { AuthModule } from './modules/admin/auth/auth.module';
 import { PortfolioModule } from './modules/portfolio/portfolio.module';
@@ -22,34 +21,60 @@ import { ExperienceModule } from './modules/resume/experience/experience.module'
 import { BlogModule } from './modules/blog/blog.module';
 import { InterestModule } from './modules/resume/interest/interest.module';
 import { ContactModule } from './modules/contact/contact.module';
-import * as path from 'node:path';
-import UserEntity from './modules/admin/users/entities/user.entity';
 import { SeederService } from './database/seeder/seeder.service';
-import { MailerModule } from '@nestjs-modules/mailer';
-// import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import UserEntity from './modules/admin/users/entities/user.entity';
 
 @Module({
   imports: [
-    MailerModule.forRoot({
-      transport: {
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: false, // true for 465
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      },
-      defaults: {
-        from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
-      },
-      template: {
-        dir: path.join(__dirname, 'templates'),
-        // adapter: new HandlebarsAdapter(),
-        options: { strict: true },
-      },
+    // 1. تنظیمات ماژول محیطی (بارگذاری فایل .env)
+    ConfigModule.forRoot({
+      envFilePath: '.env',      // مسیر فایل محیطی (پیش‌فرض)
+      isGlobal: true,           // در دسترس بودن در کل برنامه
+      cache: true,              // کش کردن برای بهبود عملکرد
     }),
-    TypeOrmModule.forFeature([UserEntity]),
+
+    // 2. تنظیمات ایمیل (Mailer) - به صورت غیرهمزمان با ConfigService
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('SMTP_HOST', 'smtp.gmail.com'),
+          port: configService.get<number>('SMTP_PORT', 587),
+          secure: false, // true برای پورت 465
+          auth: {
+            user: configService.get<string>('SMTP_USER'),
+            pass: configService.get<string>('SMTP_PASS'),
+          },
+        },
+        defaults: {
+          from: `"${configService.get<string>('FROM_NAME', 'My Site')}" <${configService.get<string>('FROM_EMAIL', 'noreply@mysite.com')}>`,
+        },
+        template: {
+          dir: path.join(__dirname, 'templates'),
+          options: { strict: true },
+        },
+      }),
+      inject: [ConfigService],
+    }),
+
+    // 3. تنظیمات دیتابیس (TypeORM) - به صورت غیرهمزمان با ConfigService
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get<string>('DB_HOST', '127.0.0.1'),
+        port: configService.get<number>('DB_PORT', 3306),
+        username: configService.get<string>('DB_USERNAME'),   // الزامی: بدون مقدار پیش‌فرض
+        password: configService.get<string>('DB_PASSWORD'),   // الزامی: بدون مقدار پیش‌فرض
+        database: configService.get<string>('DB_DATABASE'),   // الزامی: بدون مقدار پیش‌فرض
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true,   // در محیط تولید همیشه false باشد
+        logging: false,       // برای دیباگ می‌توانید true کنید
+      }),
+      inject: [ConfigService],
+    }),
+
+    // 4. تنظیمات بین‌المللی (i18n)
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {
@@ -62,17 +87,11 @@ import { MailerModule } from '@nestjs-modules/mailer';
         new AcceptLanguageResolver(),
       ],
     }),
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.DB_HOST || '127.0.0.1',
-      port: 3306,
-      username: process.env.DB_USERNAME || 'root',
-      password: process.env.DB_PASSWORD || 'HosseiN545688@+',
-      database: process.env.DB_DATABASE || 'back_resume',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
-    }),
 
+    // 5. رجیستر کردن موجودیت User برای استفاده در سرویس Seeder
+    TypeOrmModule.forFeature([UserEntity]),
+
+    // 6. ماژول‌های کاربردی برنامه
     UsersModule,
     AuthModule,
     PortfolioModule,

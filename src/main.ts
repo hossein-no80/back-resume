@@ -19,6 +19,7 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
+  app.setGlobalPrefix('api/v1');
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.use(cookieParser()); // ✅ استفاده از cookie-parser
