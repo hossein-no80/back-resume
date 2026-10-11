@@ -1,13 +1,10 @@
-// src/modules/contact/entities/email-message.entity.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   CreateDateColumn,
 } from 'typeorm';
-import { Contact } from './contact.entity';
 
 @Entity('email_messages')
 export class EmailMessage {
@@ -16,34 +13,44 @@ export class EmailMessage {
   id: string;
 
   @ApiProperty({ example: 'علی رضایی' })
-  @Column()
+  @Column({ type: 'varchar', length: 100 })
   senderName: string;
 
   @ApiProperty({ example: 'alirezaei@example.com' })
-  @Column()
+  @Column({ type: 'varchar', length: 150 })
   senderEmail: string;
 
   @ApiProperty({ example: 'درخواست همکاری' })
-  @Column()
+  @Column({ type: 'varchar', length: 200 })
   subject: string;
 
   @ApiProperty({ example: 'متن پیام...' })
   @Column({ type: 'text' })
   body: string;
 
-  @ApiProperty({ example: 'https://example.com/file.pdf', nullable: true })
-  @Column({ nullable: true })
-  attachmentUrl: string;
+  @ApiPropertyOptional({
+    example: 'https://example.com/file.pdf',
+    nullable: true,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  attachmentUrl: string | null;
 
-  @ApiProperty({ type: () => Contact, readOnly: true })
-  @ManyToOne(() => Contact, (contact) => contact.receivedEmails, { onDelete: 'CASCADE' })
-  contact: Contact;
+  @ApiPropertyOptional({
+    example: '127.0.0.1',
+    description: 'IP فرستنده (برای ضد اسپم)',
+    nullable: true,
+  })
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  senderIp: string | null;
 
-  @ApiProperty({ example: '1', readOnly: true })
-  @Column()
-  contactId: string;
+  @ApiProperty({
+    example: false,
+    description: 'آیا پیام خونده شده؟',
+  })
+  @Column({ default: false })
+  isRead: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2026-10-11T20:29:34.062Z' })
   @CreateDateColumn()
   receivedAt: Date;
 }

@@ -1,62 +1,63 @@
-// src/modules/contact/entities/contact.entity.ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Message } from './message.entity';
-import { EmailMessage } from './email-message.entity';
+import { ContactTranslation } from './contact-translation.entity';
 
-@Entity('contacts')
+/**
+ * Contact - رکورد تکی با id ثابت '1'
+ *
+ * توجه: فیلدهای email, phone, github, linkedin, location
+ * در About هستن و اینجا تکرار نمی‌شن.
+ * فرانت از هر دو endpoint (about + contact) داده می‌گیره و merge می‌کنه.
+ */
+@Entity('contact')
 export class Contact {
   @ApiProperty({ example: '1', description: 'شناسه ثابت (همیشه 1)' })
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ type: 'varchar', length: 10, default: '1' })
   id: string;
 
-  @ApiProperty({ example: 'admin@example.com' })
-  @Column({ unique: true })
-  email: string;
+  @ApiPropertyOptional({
+    example: 'PST (UTC-8)',
+    description: 'منطقه زمانی',
+  })
+  @Column({ type: 'varchar', nullable: true })
+  timezone: string | null;
 
-  @ApiProperty({ example: '09123456789', nullable: true })
-  @Column({ nullable: true })
-  mobilePhone: string;
+  @ApiPropertyOptional({
+    example: '021-12345678',
+    description: 'تلفن ثابت',
+  })
+  @Column({ type: 'varchar', nullable: true })
+  landlinePhone: string | null;
 
-  @ApiProperty({ example: '021-12345678', nullable: true })
-  @Column({ nullable: true })
-  landlinePhone: string;
+  @ApiPropertyOptional({
+    example: 'https://instagram.com/username',
+    description: 'آدرس اینستاگرام',
+  })
+  @Column({ type: 'varchar', nullable: true })
+  instagramUrl: string | null;
 
-  @ApiProperty({ example: 'تهران، خیابان آزادی، پلاک ۱۲', nullable: true })
-  @Column({ type: 'text', nullable: true })
-  address: string;
+  @ApiPropertyOptional({
+    example: 'https://t.me/username',
+    description: 'آدرس تلگرام',
+  })
+  @Column({ type: 'varchar', nullable: true })
+  telegramUrl: string | null;
 
-  @ApiProperty({ example: 'https://instagram.com/username', nullable: true })
-  @Column({ nullable: true })
-  instagramUrl: string;
+  // ─── Relations ───
+  @ApiProperty({ type: () => [ContactTranslation] })
+  @OneToMany(() => ContactTranslation, (t) => t.contact, {
+    cascade: true,
+  })
+  translations: ContactTranslation[];
 
-  @ApiProperty({ example: 'https://t.me/username', nullable: true })
-  @Column({ nullable: true })
-  telegramUrl: string;
-
-  @ApiProperty({ example: 'https://github.com/username', nullable: true })
-  @Column({ nullable: true })
-  githubUrl: string;
-
-  @ApiProperty({ example: 'https://linkedin.com/in/username', nullable: true })
-  @Column({ nullable: true })
-  linkedinUrl: string;
-
-  @ApiProperty({ type: () => [Message], readOnly: true })
-  @OneToMany(() => Message, (message) => message.contact, { cascade: true })
-  messages: Message[];
-
-  @ApiProperty({ type: () => [EmailMessage], readOnly: true })
-  @OneToMany(() => EmailMessage, (email) => email.contact, { cascade: true })
-  receivedEmails: EmailMessage[];
-
+  // ─── Timestamps ───
   @ApiProperty()
   @CreateDateColumn()
   createdAt: Date;

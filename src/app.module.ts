@@ -22,14 +22,14 @@ import { AppService } from './app.service';
 import { UsersModule } from './modules/admin/users/users.module';
 import { AuthModule } from './modules/admin/auth/auth.module';
 import { AboutModule } from './modules/about/about.module';
-import { BlogModule } from './modules/blog/blog.module';
-import { ContactModule } from './modules/contact/contact.module';
 import { SeederService } from './database/seeder/seeder.service';
 import UserEntity from './modules/admin/users/entities/user.entity';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { HeroModule } from './modules/site/hero/hero.module';
 import { SkillsModule } from './modules/skills/skills.module';
 import { ExperienceModule } from './modules/experience/experience.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+import { ContactModule } from './modules/contact/contact.module';
 
 @Module({
   imports: [
@@ -139,11 +139,11 @@ import { ExperienceModule } from './modules/experience/experience.module';
     UsersModule,
     AuthModule,
     AboutModule,
-    BlogModule,
     ContactModule,
     HeroModule,
     SkillsModule,
     ExperienceModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [
