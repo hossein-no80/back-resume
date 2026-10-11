@@ -29,6 +29,7 @@ import UserEntity from './modules/admin/users/entities/user.entity';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { HeroModule } from './modules/site/hero/hero.module';
 import { SkillsModule } from './modules/skills/skills.module';
+import { ExperienceModule } from './modules/experience/experience.module';
 
 @Module({
   imports: [
@@ -142,6 +143,7 @@ import { SkillsModule } from './modules/skills/skills.module';
     ContactModule,
     HeroModule,
     SkillsModule,
+    ExperienceModule,
   ],
   controllers: [AppController],
   providers: [
