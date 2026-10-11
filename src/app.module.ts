@@ -14,7 +14,6 @@ import { redisStore } from 'cache-manager-redis-store';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
-import { AboutSeeder } from './database/seeder/about.seeder';
 import { About } from './modules/about/entities/about.entity';
 import { AboutTranslation } from './modules/about/entities/about-translation.entity';
 
@@ -29,6 +28,7 @@ import { SeederService } from './database/seeder/seeder.service';
 import UserEntity from './modules/admin/users/entities/user.entity';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { HeroModule } from './modules/site/hero/hero.module';
+import { SkillsModule } from './modules/skills/skills.module';
 
 @Module({
   imports: [
@@ -141,12 +141,12 @@ import { HeroModule } from './modules/site/hero/hero.module';
     BlogModule,
     ContactModule,
     HeroModule,
+    SkillsModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     SeederService,
-    AboutSeeder,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

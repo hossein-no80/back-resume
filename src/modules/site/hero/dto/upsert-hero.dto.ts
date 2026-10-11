@@ -35,7 +35,7 @@ export class HeroTranslationDto {
   @Length(1, 100)
   cta1: string;
 
-  @ApiProperty({ example: 'Explore skills' })
+  @ApiProperty({ example: 'Explore asdf' })
   @IsString()
   @Length(1, 100)
   cta2: string;
