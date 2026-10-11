@@ -1,3 +1,39 @@
+// // @ts-check
+// import eslint from '@eslint/js';
+// import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+// import globals from 'globals';
+// import tseslint from 'typescript-eslint';
+//
+// export default tseslint.config(
+//   {
+//     ignores: ['eslint.config.mjs'],
+//   },
+//   eslint.configs.recommended,
+//   ...tseslint.configs.recommendedTypeChecked,
+//   eslintPluginPrettierRecommended,
+//   {
+//     languageOptions: {
+//       globals: {
+//         ...globals.node,
+//         ...globals.jest,
+//       },
+//       sourceType: 'commonjs',
+//       parserOptions: {
+//         projectService: true,
+//         tsconfigRootDir: import.meta.dirname,
+//       },
+//     },
+//   },
+//   {
+//     rules: {
+//       '@typescript-eslint/no-explicit-any': 'off',
+//       '@typescript-eslint/no-floating-promises': 'warn',
+//       '@typescript-eslint/no-unsafe-argument': 'warn',
+//       "prettier/prettier": ["error", { endOfLine: "auto" }],
+//     },
+//   },
+// );
+
 // @ts-check
 import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
@@ -6,7 +42,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['eslint.config.mjs', 'dist/**', 'node_modules/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -29,7 +65,26 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
+      'prettier/prettier': ['error', { endOfLine: 'auto' }],
+    },
+  },
+  // ============ استثنا برای TypeORM ============
+  // فایل‌های entity و service و module با TypeORM کار می‌کنن و
+  // این ruleها در اون‌ها false positive می‌دن.
+  {
+    files: [
+      '**/*.entity.ts',
+      '**/*.service.ts',
+      '**/*.module.ts',
+      '**/migrations/**/*.ts',
+      '**/seeder/**/*.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
     },
   },
 );

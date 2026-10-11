@@ -8,30 +8,30 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
-} from 'typeorm';
-import { Author } from './author.entity';
-import { Tag } from './tag.entity';
-import { Comment } from './comment.entity';
-import { BlogTranslation } from './blog-translation.entity';
-import { BlogStatus } from './blog-status.enum';
-import { BlogImage } from './blog-image.entity';
+} from "typeorm";
+import { Author } from "./author.entity";
+import { Tag } from "./tag.entity";
+import { Comment } from "./comment.entity";
+import { BlogTranslation } from "./blog-translation.entity";
+import { BlogStatus } from "./blog-status.enum";
+import { BlogImage } from "./blog-image.entity";
 
-@Entity('blogs')
+@Entity("blogs")
 export class Blog {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column({ unique: true })
   slug: string; // برای سئو و آدرس‌دهی – از عنوان تولید می‌شود
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: BlogStatus,
     default: BlogStatus.DRAFT,
   })
   status: BlogStatus;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: "timestamp", nullable: true, default: null })
   publishedAt: Date;
 
   @ManyToOne(() => Author, (author) => author.blogs, { nullable: true })
@@ -41,7 +41,7 @@ export class Blog {
   images: BlogImage[];
 
   @ManyToMany(() => Tag, (tag) => tag.blogs)
-  @JoinTable({ name: 'blog_tags' })
+  @JoinTable({ name: "blog_tags" })
   tags: Tag[];
 
   @OneToMany(() => Comment, (comment) => comment.blog, { cascade: true })

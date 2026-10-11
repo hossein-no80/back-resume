@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -9,20 +9,26 @@ import {
   QueryResolver,
 } from 'nestjs-i18n';
 import * as path from 'node:path';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+
+import { AboutSeeder } from './database/seeder/about.seeder';
+import { About } from './modules/about/entities/about.entity';
+import { AboutTranslation } from './modules/about/entities/about-translation.entity';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './modules/admin/users/users.module';
 import { AuthModule } from './modules/admin/auth/auth.module';
-import { PortfolioModule } from './modules/portfolio/portfolio.module';
-import { SkillModule } from './modules/resume/skill/skill.module';
-import { AboutModule } from './modules/resume/about/about.module';
-import { ExperienceModule } from './modules/resume/experience/experience.module';
+import { AboutModule } from './modules/about/about.module';
 import { BlogModule } from './modules/blog/blog.module';
-import { InterestModule } from './modules/resume/interest/interest.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { SeederService } from './database/seeder/seeder.service';
 import UserEntity from './modules/admin/users/entities/user.entity';
+import { LoggerMiddleware } from './common/middleware/logger.middleware';
+import { HeroModule } from './modules/site/hero/hero.module';
 
 @Module({
   imports: [
@@ -33,14 +39,38 @@ import UserEntity from './modules/admin/users/entities/user.entity';
       cache: true,
     }),
 
-    // 2. تنظیمات ایمیل (Mailer) - به صورت غیرهمزمان با ConfigService
+    // 2. Rate Limiting
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000, // 1 دقیقه
+          limit: 100, // حداکثر 100 درخواست در دقیقه
+        },
+      ],
+    }),
+
+    // 3. Cache Module با Redis
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: async () => ({
+        store: await redisStore({
+          socket: {
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379'),
+          },
+          ttl: parseInt(process.env.CACHE_TTL || '300'), // 5 دقیقه
+        }),
+      }),
+    }),
+
+    // 4. تنظیمات ایمیل (Mailer)
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         transport: {
           host: configService.get<string>('SMTP_HOST', 'smtp.gmail.com'),
           port: configService.get<number>('SMTP_PORT', 587),
-          secure: false, // true برای پورت 465
+          secure: configService.get<boolean>('SMTP_SECURE', false),
           auth: {
             user: configService.get<string>('SMTP_USER'),
             pass: configService.get<string>('SMTP_PASS'),
@@ -57,7 +87,7 @@ import UserEntity from './modules/admin/users/entities/user.entity';
       inject: [ConfigService],
     }),
 
-    // 3. تنظیمات دیتابیس (TypeORM) - به صورت غیرهمزمان با ConfigService
+    // 5. تنظیمات دیتابیس (TypeORM)
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -68,18 +98,31 @@ import UserEntity from './modules/admin/users/entities/user.entity';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
-        logging: false,
+        synchronize: process.env.NODE_ENV !== 'production', // فقط در محیط development
+        maxQueryExecutionTime: 1000,
+        logging:
+          process.env.NODE_ENV === 'development' ? ['error', 'warn'] : false,
+        extra: {
+          max: 20,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+        },
+        // اضافه کردن SSL برای production
+        ...(process.env.NODE_ENV === 'production' && {
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        }),
       }),
       inject: [ConfigService],
     }),
 
-    // 4. تنظیمات بین‌المللی (i18n)
+    // 6. تنظیمات بین‌المللی (i18n)
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {
         path: path.join(__dirname, '/i18n/'),
-        watch: true,
+        watch: process.env.NODE_ENV === 'development',
       },
       resolvers: [
         new HeaderResolver(['x-custom-lang']),
@@ -88,21 +131,30 @@ import UserEntity from './modules/admin/users/entities/user.entity';
       ],
     }),
 
-    // 5. رجیستر کردن موجودیت User برای استفاده در سرویس Seeder
-    TypeOrmModule.forFeature([UserEntity]),
+    // 7. رجیستر کردن موجودیت User برای استفاده در سرویس Seeder
+    TypeOrmModule.forFeature([UserEntity, About, AboutTranslation]),
 
-    // 6. ماژول‌های کاربردی برنامه
+    // 8. ماژول‌های کاربردی برنامه
     UsersModule,
     AuthModule,
-    PortfolioModule,
-    SkillModule,
     AboutModule,
-    ExperienceModule,
     BlogModule,
-    InterestModule,
     ContactModule,
+    HeroModule,
   ],
   controllers: [AppController],
-  providers: [AppService, SeederService],
+  providers: [
+    AppService,
+    SeederService,
+    AboutSeeder,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}
