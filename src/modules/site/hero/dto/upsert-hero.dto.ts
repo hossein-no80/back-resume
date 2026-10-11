@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -35,7 +35,7 @@ export class HeroTranslationDto {
   @Length(1, 100)
   cta1: string;
 
-  @ApiProperty({ example: 'Explore asdf' })
+  @ApiProperty({ example: 'Explore skills' })
   @IsString()
   @Length(1, 100)
   cta2: string;
@@ -59,3 +59,10 @@ export class UpsertHeroDto {
   @Type(() => HeroTranslationDto)
   translations: HeroTranslationDto[];
 }
+
+/**
+ * برای PATCH:
+ * - همه فیلدها optional می‌شن
+ * - اگه `translations` بفرستی → کل داده جایگزین می‌شه
+ */
+export class UpdateHeroDto extends PartialType(UpsertHeroDto) {}

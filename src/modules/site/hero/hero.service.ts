@@ -9,8 +9,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Hero } from './entities/hero.entity';
 import { HeroTranslation } from './entities/hero-translation.entity';
-import { UpsertHeroDto } from './dto/upsert-hero.dto';
-import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from '../../../common/constants';
+import { UpdateHeroDto } from './dto/upsert-hero.dto';
+import { HeroTranslationDto } from './dto/upsert-hero.dto';
+import {
+  DEFAULT_LANGUAGE,
+  SUPPORTED_LANGUAGES,
+} from '../../../common/constants';
+
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
 
 export interface HeroResponse {
   language: string;
@@ -33,14 +41,15 @@ export class HeroService {
 
   constructor(
     @InjectRepository(Hero)
-    private heroRepo: Repository<Hero>,
-
+    private readonly heroRepo: Repository<Hero>,
     @InjectRepository(HeroTranslation)
-    private trRepo: Repository<HeroTranslation>,
-
-    private dataSource: DataSource,
+    private readonly trRepo: Repository<HeroTranslation>,
+    private readonly dataSource: DataSource,
   ) {}
 
+  // ─────────────────────────────────────────────
+  // GET /site/hero?lang=fa  (عمومی)
+  // ─────────────────────────────────────────────
   async getByLanguage(lang: string = DEFAULT_LANGUAGE): Promise<HeroResponse> {
     const hero = await this.heroRepo.findOne({
       where: { id: 1 },
@@ -60,12 +69,16 @@ export class HeroService {
     return this.toResponse(t);
   }
 
+  // ─────────────────────────────────────────────
+  // GET /site/hero/admin  (ادمین)
+  // ─────────────────────────────────────────────
   async getAll(): Promise<HeroFullResponse> {
     const hero = await this.heroRepo.findOne({
       where: { id: 1 },
       relations: ['translations'],
     });
     if (!hero) throw new NotFoundException('Hero not found');
+
     return {
       translations: (hero.translations ?? []).map((t) => ({
         id: t.id,
@@ -74,8 +87,15 @@ export class HeroService {
     };
   }
 
-  async upsert(dto: UpsertHeroDto): Promise<HeroFullResponse> {
-    this.validateLanguages(dto);
+  // ─────────────────────────────────────────────
+  // PATCH /site/hero  (ادمین) — replace کامل
+  // ─────────────────────────────────────────────
+  async patch(dto: UpdateHeroDto): Promise<HeroFullResponse> {
+    if (!dto.translations) {
+      return this.getAll();
+    }
+
+    this.validateLanguages(dto.translations);
 
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
@@ -101,25 +121,42 @@ export class HeroService {
         tr.cta2 = t.cta2;
         tr.status = t.status;
         tr.role = t.role;
-        tr.heroId = hero!.id;
+        tr.heroId = hero.id;
         return tr;
       });
 
       await qr.manager.save(list);
       await qr.commitTransaction();
-      this.logger.log('Hero upserted');
+      this.logger.log('Hero patched successfully');
       return await this.getAll();
     } catch (e) {
       await qr.rollbackTransaction();
       const err = e as Error;
-      this.logger.error(`Hero upsert failed: ${err.message}`, err.stack);
+      this.logger.error(`Hero patch failed: ${err.message}`, err.stack);
       throw new InternalServerErrorException(
-        process.env.NODE_ENV === 'development' ? err.message : 'Error saving Hero',
+        process.env.NODE_ENV === 'development'
+          ? err.message
+          : 'Error saving Hero',
       );
     } finally {
       await qr.release();
     }
   }
+
+  // ─────────────────────────────────────────────
+  // DELETE /site/hero  (ادمین)
+  // ─────────────────────────────────────────────
+  async remove(): Promise<{ message: string }> {
+    const hero = await this.heroRepo.findOne({ where: { id: 1 } });
+    if (!hero) throw new NotFoundException('Hero not found');
+
+    await this.heroRepo.remove(hero);
+    return { message: 'Hero deleted successfully' };
+  }
+
+  // ─────────────────────────────────────────────
+  // Private helpers
+  // ─────────────────────────────────────────────
 
   private toResponse(t: HeroTranslation): HeroResponse {
     return {
@@ -134,9 +171,9 @@ export class HeroService {
     };
   }
 
-  private validateLanguages(dto: UpsertHeroDto): void {
+  private validateLanguages(translations: HeroTranslationDto[]): void {
     const seen = new Set<string>();
-    for (const t of dto.translations) {
+    for (const t of translations) {
       if (!SUPPORTED_LANGUAGES.includes(t.language as never)) {
         throw new BadRequestException(`Unsupported language: ${t.language}`);
       }

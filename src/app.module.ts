@@ -30,6 +30,7 @@ import { SkillsModule } from './modules/skills/skills.module';
 import { ExperienceModule } from './modules/experience/experience.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { ContactModule } from './modules/contact/contact.module';
+import { BlogModule } from './modules/blog/blog.module';
 
 @Module({
   imports: [
@@ -144,6 +145,7 @@ import { ContactModule } from './modules/contact/contact.module';
     SkillsModule,
     ExperienceModule,
     ProjectsModule,
+    BlogModule,
   ],
   controllers: [AppController],
   providers: [
